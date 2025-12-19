@@ -1,0 +1,43 @@
+name: Request Scan
+on: [push]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire Signal to Engine
+        run: |
+          curl -X POST https://api.github.com/repos/Eleftherk/private_workflow/dispatches \
+          -H "Authorization: token ${{ secrets.MY_TEST_TOKEN }}" \
+          -d '{"event_type": "run-test", "client_payload": {"repository": "${{ github.repository }}", "sha": "${{ github.sha }}"}}'
+
+      - name: Wait for Result
+        env:
+          GH_TOKEN: ${{ secrets.MY_TEST_TOKEN }}
+        run: |
+          echo "Waiting for 'My Security Product' status..."
+          
+          for i in {1..20}; do
+            
+            sleep 10
+            
+            DATA=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/statuses \
+              --jq '.[] | select(.context == "My Security Product")' | head -n 1)
+
+            STATUS=$(echo "$DATA" | jq -r .state)
+            MESSAGE=$(echo "$DATA" | jq -r .description)
+            
+            if [ "$STATUS" == "success" ]; then
+              echo "✅ PASS: $MESSAGE"
+              exit 0 # End Green
+            elif [ "$STATUS" == "failure" ]; then
+              echo "❌ FAIL: $MESSAGE"
+              exit 1 # End Red
+            fi
+
+            echo "Attempt $i: Status is '$STATUS'. Waiting..."
+
+          done
+          
+          echo "⏰ Timeout: Engine took too long to respond."
+          exit 1
