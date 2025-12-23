@@ -9,11 +9,11 @@ jobs:
         run: |
           curl -X POST https://api.github.com/repos/Eleftherk/private_workflow/dispatches \
           -H "Authorization: token ${{ secrets.MY_TEST_TOKEN }}" \
-          -d '{"event_type": "run-test", "client_payload": {"repository": "${{ github.repository }}", "sha": "${{ github.sha }}"}}'
+          -d '{"event_type": "run-test", "client_payload": {"repository": "${{ github.repository }}", "sha": "${{ github.sha }}", "client_token": "${{ secrets.GITHUB_TOKEN }}"}}'
 
       - name: Wait for Result
         env:
-          GH_TOKEN: ${{ secrets.MY_TEST_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Waiting for 'My Security Product' status..."
           
